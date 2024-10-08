@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+import sys
+from socket import *
+import time
+
+def main():
+    listenPort = int(sys.argv[1])
+    fakeIp = sys.argv[2]
+    serverIp = sys.argv[3]
+    
+    # Start a connection as a LISTENER with the client
+    inputSocket = socket(AF_INET, SOCK_STREAM)
+    inputSocket.bind(('', listenPort))
+    inputSocket.listen(1)
+
+    # Start a connection as a SENDER with the server
+    outputSocket = socket(AF_INET, SOCK_STREAM)
+    outputSocket.bind((fakeIp, 8081))
+    outputSocket.connect((serverIp, 8080))
+
+    inputConnectionSocket, addr = inputSocket.accept()
+
+    msg = ""
+    while True:
+        received = inputConnectionSocket.recv(2)
+        decoded = received.decode()
+        msg += decoded
+        if (decoded == "\n"):
+            print(msg)
+            outputSocket.send(msg.encode())
+            msg = ""
+
+    outputSocket.close()
+    connectionSocket.close()
+    serverSocket.close()
+        
+
+if __name__ == "__main__":
+    main()
+
