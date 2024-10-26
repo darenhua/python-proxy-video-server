@@ -1,41 +1,44 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.10
 
 import sys
+import threading
 from socket import *
 import time
 
+def writeLog(fileName, timestamp, duration, serverIp, chunkName, chunkSize):
+    with threading.Lock():
+        with open(fileName, 'a') as f:
+            f.write(f"{timestamp} {duration:.6f} {serverIp} {chunkName} {chunkSize}")
+            f.flush()
+
+# referenced https://realpython.com/intro-to-python-threading/
+def newClientThread(clientSocket):
+    print(f"Thread starting")
+    time.sleep(2)
+    print(f"Thread finished")
+
 def main():
-    listenPort = int(sys.argv[1])
-    fakeIp = sys.argv[2]
-    serverIp = sys.argv[3]
-    
-    # Start a connection as a LISTENER with the client
-    inputSocket = socket(AF_INET, SOCK_STREAM)
-    inputSocket.bind(('', listenPort))
-    inputSocket.listen(1)
+    logFilename = sys.argv[1]
+    listenPort = int(sys.argv[2])
+    fakeIp = sys.argv[3]
+    serverIp = sys.argv[4]
 
-    # Start a connection as a SENDER with the server
-    outputSocket = socket(AF_INET, SOCK_STREAM)
-    outputSocket.bind((fakeIp, 8081))
-    outputSocket.connect((serverIp, 8080))
+    # Server socket for connections with the client    
+    serverSocket = socket(AF_INET, SOCK_STREAM)
+    serverSocket.bind(('', listenPort))
+    serverSocket.listen(100)
 
-    inputConnectionSocket, addr = inputSocket.accept()
-
-    msg = ""
     while True:
-        received = inputConnectionSocket.recv(2)
-        decoded = received.decode()
-        msg += decoded
-        if (decoded == "\n"):
-            print(msg)
-            outputSocket.send(msg.encode())
-            msg = ""
+        clientSocket, addr = serverSocket.accept()
+        clientThread = threading.Thread(
+            target=newClientThread,
+            args=(clientSocket,),
+            daemon=True
+        )
+        clientThread.start()
 
-    outputSocket.close()
-    connectionSocket.close()
     serverSocket.close()
-        
+
 
 if __name__ == "__main__":
     main()
-
